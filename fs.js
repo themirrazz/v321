@@ -1,5 +1,5 @@
 /*
-Todo: convert the V1 fs to V2
+Todo: convert the V1 fs to V3
 */
 
 fakewin.FS={
@@ -49,9 +49,12 @@ fakewin.FS={
   exists:async function (path){
     var volumeletter=path[0];
     var AllowedVolumes=['a', 'c'];
+    var volumes={'a':'floppy_a','c':'main'};
+    var dev="";
     if(AllowedVolumes.indexOf(volumeletter.toLowerCase())==-1){
       return false
     }
+    dev=volumes[volumeletter]
     if(!fs[dev].fileExists(path.slice(2))){
        return false
     }
