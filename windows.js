@@ -1,6 +1,7 @@
 fakewin.StandardWindow=function(...args){return w96.util.Swgen(new (function(){}).constructor("return window.StandardWindow")()(...args));}
 fakewin.WindowSystem={
   get windows(){ var rws=(function(){}).constructor("return window.w96")().windowSystem.windows;var x=[];for(var i=0;i<rws.length;i++){try{x.push(fakewin.util.Swgen(rws[i]))}catch(e){x.push(null)}};return x},
+  closeAllWindows:function(){for(var i=0;i<this.windows.length;i++){try{this.windows[i].close()}catch(e){null}}}
 }
 fakewin.util.Swgen=function(rsw){
   var sw={
