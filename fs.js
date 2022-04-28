@@ -46,4 +46,15 @@ fakewin.FS={
     var blob=new Blob([this.readbin(path).buffer]);
     return blob;
   },
+  exists:async function (path){
+    var volumeletter=path[0];
+    var AllowedVolumes=['a', 'c'];
+    if(AllowedVolumes.indexOf(volumeletter.toLowerCase())==-1){
+      return false
+    }
+    if(!fs[dev].fileExists(path.slice(2))){
+       return false
+    }
+    return true
+  },
 }
