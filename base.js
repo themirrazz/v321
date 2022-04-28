@@ -3,14 +3,103 @@ var fakewin={
   toString:function(){},
   util:{},
   ui:{
-    MenuBar: function(){
-      var el=document.createElement('div');
-      this.menuElement=el
-      this.addRoot=function(label){el.innerText+='label'}
-      this.getMenuDiv=function(){return el}
+    get MsgBoxSimple(){return w96.ui.commdlg.msgboxSimple}
+  },
+  shell: {
+    mkShortcut: function(xUNUSED_1,icon,cmd) {
+      w96.desktop_shell.addIcon(
+        cmd,
+        icon,
+        20,
+        20,
+        function(){w96.ui.commdlg.msgboxSimple.error("Error", "You are doing this wrong.", 'wat')}
+      )
     }
   }
 };
+  fakewin.ui.MenuBar=V3MenuBar;
+  
+  function V3MenuBar(){
+    var el=document.createElement('div');
+    this.menuElement=el;
+  };
+  V3MenuBar.prototype.getMenuDiv=function(){return this.menuElement}
+  V3MenuBar.prototype.addRoot=function(label,ctx){
+    var cm=new V3ContextMenu(ctx);
+    var e=document.createElement('span');
+    e.innerText=label;
+    e.onclick=function(e){
+      cm.renderMenu(e.clientX,e.clientY);
+    }
+    this.menuElement.appendChild(e);
+  }
+  
+var SomeV3App=class {
+  constructor(){
+    console.log("my app is awesomeyeeeeee");
+  }
+  async main(argv) {
+    console.log("ARRRRRRGH! "+argv);
+  }
+}
+
+SomeV3App.execAsync=function(a,b){
+  eval(`(async function(w96,SomeV3App,argv){
+   a.main(argv);
+})`)(fakewin,SomeV3App,b);
+}
+ fakewin.WApplication=SomeV3App;
+
+  
+function V3ContextMenu(items) {
+  this.$$DEFAULTITEMS$$=items;
+  this.menuCounter=0;
+}
+ 
+ function mysafeeval(f,argv){
+  eval(`(async function(w96,SomeV3App,argv){
+   f()
+})`)(fakewin,SomeV3App,f,argv||[]);
+ };
+  
+  
+V3ContextMenu.prototype.renderMenu=function(x,y,opitems){
+  var items=opitems||this.$$DEFAULTITEMS$$;
+  var menudiv=document.createElement("div");
+  menudiv.style.position="fixed";
+  menudiv.style.top=y+"px";
+  menudiv.style.left=x+"px";
+  menudiv.style.backgroundColor="grey";
+  menudiv.style.fontSize='18px';
+  menudiv.style.color='black';
+  menudiv.style.width="80px";
+  menudiv.style.zIndex="99999999999999999999999999999999999999999";
+  for(var i=0;i<items.length;i++){
+    var itm=items[i];
+    var mie=document.createElement("div");
+    if(i<items.length-1){mie.style.borderBottom='1px solid black'}
+    mie.style.width="100%";
+    mie.style.overflow='hidden';
+    mie.innerText=items[i].label;
+    (function (bruh,e){
+    e.onclick=function(){
+      mysafeeval(bruh.onclick);
+    }
+    })(itm,mie);
+    menudiv.appendChild(mie);
+  }
+  document.querySelector('.desktop').appendChild(menudiv);
+  var eDer=true;
+  setTimeout(function(){
+  window.addEventListener('click',function(){
+    if(eDer){eDer=false;
+             menudiv.parentNode.removeChild(menudiv);
+    }
+  });
+  },100);
+  return menudiv
+}
+  
 /*
 Todo: convert the V1 fs to V2
 */
@@ -59,6 +148,26 @@ fakewin.FS={
   toBlob:async function (path){
     var blob=new Blob([this.readbin(path).buffer]);
     return blob;
+  },
+  readdir:async function(path){
+    var res=[];
+    var volumeletter=path[0];
+    var AllowedVolumes=['a', 'c'];
+    var volumes={'a':'floppy_a','c':'main'};
+    var dev="";
+    if(AllowedVolumes.indexOf(volumeletter.toLowerCase())==-1){
+      throw {
+        name: 'FSErrno',
+        message:'ENODEV: '+path.slice(2)+': No such device'
+      }
+    };
+    dev=volumes[volumeletter]||"main";
+    for(var i=0;i<localStorage.length;i++){
+      if(path==fs[dev].getParentPath(localStorage.key(i).slice(2))){
+         res.push(localStorage.key(i))
+      }
+    }
+    return res
   },
   exists:async function (path){
     var volumeletter=path[0];
@@ -109,14 +218,31 @@ fakewin.util.Swgen=function(rsw){
   };
   return sw;
 };
+  
+  var $$USEWRT$$=confirm('Run as wrt?')
+  
+  if($$USEWRT$$){
+    var $$ARGSSTR$$=prompt("Arguments (split by space)");
+    $$ARGSSTR$$=prompt("Command name:")+" "+$$ARGSSTR$$;
+    var $$ARGS$$=$$ARGSSTR$$.split(" ");
+    var f$=eval(`(async function(w96,WApplication){
+${fs.main.getFileContents(fp)}
+})`);
+f$.call({
+  boxedEnv:{args:$$ARGS$$}
+},fakewin,fakewin.WApplication).then(console.info).catch(function(e){
+  alert(e.name+":"+e.message);
+});
+  }else{
 
-var f$=eval(`(async function(w96){
+var f$=eval(`(async function(w96,WApplication){
 ${fs.main.getFileContents(fp)}
 })`);
 f$(fakewin).then(console.info).catch(function(e){
   alert(e.name+":"+e.message);
 });
   
+  }
 
   
 
