@@ -1,0 +1,3 @@
+var fakewin={
+  toString:function(){}
+}
