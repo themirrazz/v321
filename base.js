@@ -5,8 +5,9 @@ var fakewin={
   util:{wait:function(ms){return new Promise(function(y,n){setTimeout(function(){y()},ms);})},
   FSUtil:{},
   fstype:{},
+  sysConf:{},
   ui:{
-    MsgBoxSimple:
+    MsgBoxSimple: {
       error:function(){
         return w96.ui.commdlg.msgboxSimple.error(...arguments);
       },
@@ -97,7 +98,9 @@ f$.call({
       }
     }
   }
-};
+       }
+  
+}
   fakewin.ui.MenuBar=V3MenuBar;
   
   function V3MenuBar(){
@@ -627,6 +630,175 @@ fakewin.util.Swgen=function(rsw){
   return sw;
 };
   
+
+var indexes={};
+var data={};
+
+
+
+var scmGetIndex=function(idx) {
+  for(var i=0;i<indexes.length;i++){
+    if(!indexes[i]){continue}
+    if(indexes[i].name==idx){
+      return indexes[i];
+    }
+  }
+  return null;
+};
+
+var scmGet=function(path) {
+  var spl=path.split("/");
+  var obx=null;
+  if(spl.length<1){
+    return obx;
+  }
+  if(!scmGetIndex(spl[0])) {
+    return obx
+  }
+  obx=data[scmGetIndex(spl[0]).id];
+  for(var i=1;i<spl.length;i++) {
+    if(obx[spl[i]]){
+      obx=obx[spl[i]];
+    } else {
+      return obx
+    }
+  }
+}
+
+var scmLoad=async function(){
+  indexes=JSON.parse(await fakewin.FS.readstr("C:/system/config/SCM/index")).indexes;
+  for(var i=0;i<indexes.length;i++){
+    var idx=indexes[indexes[i]];
+    if(!idx){continue}
+    if(!idx.id){continue}
+    data[idx.id]=JSON.parse(await fakewin.FS.readstr("C:/system/config/SCM/"+idx.id)).data;
+  }
+}
+
+// The 36-bit system "portal"
+var Sys36={
+  causeRel1ToBlueScreen:function(bsod_message){
+    try {
+      return {
+        status:'portld',
+        massage:w96.bsod(bsod_message)
+      }
+    }catch(er){
+      return {
+        status: 'portal_failed',
+        massage:er
+      }
+    }
+  }
+}
+
+var scmSyncRoot=async function (e) {
+  var root=scmGetIndex(e);
+  if(!root){return}
+  if(root.psuedo){return}
+  if(root.name!==e){return}
+  await fakewin.FS.writestr("C:/system/config/SCM/"+root.id,JSON.stringify(data[root.id]));
+}
+
+var scmSync=async function() {
+  await fakewin.FS.writestr("C:/system/config/SCM/index",JSON.stringify({
+    ver:1,
+    indexes:indexes
+  }));
+  for(var i=0;i<indexes.length;i++){
+    try{
+      await scmSycnRoot(indexes.name)
+    }catch(e){null}
+  }
+}
+
+var scmIsKey=function g(y){return typeof y==="object"&&y!==null&&y!==undefined}
+
+var scmLs=function(s){
+  var scmx=scmGetIndex(s);
+  if(s==""){
+    var idxarr=[];
+    for(var i=0;i<indexes.length;i++){
+      idxarr.push({type:'root',name:indexes[i].name})
+    }
+    return idxarr;
+  }
+  if(!scmx){
+    return [];
+  }
+  if(scmIsKey(scmx)) {
+    return [];
+  }
+  var keys=Object.keys(scmx);
+  var arr=[];
+  for(var i=0;i<keys.length;i++){
+    var key=keys[i];
+    var idx=scmx[key];
+    if(scmIsKey(idx)){
+      arr.push({type:'key',name:key});
+    } else {
+      arr.push({type:'value',name:key});
+    }
+  }
+  return arr;
+}
+
+var scmSet=function(e,t){
+  var idx=scmGetIndex(e.split("/")[0]);
+  if(!idx){return false}
+  var spl=e.split("/");
+  var k="idx";
+  if(spl.length<1){return false}
+  for(var i=0;i<spl.length;i++){
+    k+="["+JSON.stringify(spl[i])+"]";
+  }
+  try{
+    eval(k+"=t");
+  }catch(e){return false}
+  scmSync().then(Sys36.Noop).catch(Sys36.Noop);
+}
+
+var scmDel=function(e,t){
+  var idx=scmGetIndex(e.split("/")[0]);
+  if(!idx){return false}
+  var spl=e.split("/");
+  var k="idx";
+  if(spl.length<1){return false}
+  for(var i=0;i<spl.length;i++){
+    k+="["+JSON.stringify(spl[i])+"]";
+  }
+  try{
+    eval("delete "+k);
+  }catch(e){return false}
+  scmSync().then(Sys36.Noop).catch(Sys36.Noop);
+}
+
+var scmNewRoot=function(e,t){
+  var root={name:name,id:Object.keys(indexes).length,description:e||"",pseudo:!1};
+  var dat={quota:{maxSize:1048576},data:{}};
+  data[root.id]=dat;
+  indexes.push(root);
+  scmSync().then(Sys36.Noop).catch(Sys36.Noop);
+};
+
+fakewin.sysConf={
+  createRoot:scmNewRoot,
+  syncAll:scmSync,
+  syncRoot:scmSyncRoot,
+  get:scmGet,
+  getIndex:scmGetIndex,
+  remove:scmDel,
+  removeAndSync:scmDel,
+  set:scmSet,
+  setAndSync:scmSet,
+  ls:scmLs,
+  loadAll:scmLoad
+}
+
+try{
+  await scmLoad();
+}catch(e){null}
+
   var $$USEWRT$$=confirm('Run as wrt?')
   if($$USEWRT$$){
     var $$ARGSSTR$$=prompt("Arguments (split by space)");
