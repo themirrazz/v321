@@ -377,6 +377,7 @@ var Ini36 = {
       var x=wsp[i];
       if(x[0]=='['&&x[x.length-1]==']'){
         g=x.slice(1,x.length-1);
+        ini[x.slice(1,x.length-1)]={};
       } else if(x.indexOf('=')>-1){
         ini[g][x.split("=")[0]]=x.split("=")[1]
       }
@@ -384,7 +385,7 @@ var Ini36 = {
     return ini
   }
 };
- w96.util.INI=Ini36;
+ fakewin.util.INI=Ini36;
   
   
 /*
