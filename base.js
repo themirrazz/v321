@@ -351,10 +351,48 @@ V3ContextMenu.prototype.renderMenu=function(x,y,opitems){
   return menudiv
 }
   fakewin.ui.ContextMenu=V3ContextMenu;
+  
+  
+  
+var Ini36 = {
+  stringify: function(o) {
+    var res="\n";
+    var k=Object.keys(o);
+    for(var i=0;i<k.length;i++){
+      var g=k[i];
+      var x=o[k];
+      res+=("["+g+"]\n");
+      var f=Object.keys(x);
+      for(var z=0;z<f.length;z++){
+        res+=(f[z]+"="+x[f[z]]+"\n")
+      }
+    }
+    return res
+  },
+  parse:function(f){
+    var ini={};
+    var wsp=f.split("\n");
+    var g='';
+    for(var i=0;i<wsp.length;i++){
+      var x=wsp[i];
+      if(x[0]=='['&&x[x.length-1]==']'){
+        g=x.slice(1,x.length-1);
+      } else if(x.indexOf('=')>-1){
+        ini[g][x.split("=")[0]]=x.split("=")[1]
+      }
+    }
+    return ini
+  }
+};
+ w96.util.INI=Ini36;
+  
+  
 /*
 Todo: convert the V1 fs to V2
 */
 
+  
+ 
 fakewin.FS={
   mounts:function(){
     var mks=Object.keys(fs);
@@ -767,6 +805,7 @@ var scmSync=async function() {
 }
 
 var scmIsKey=function g(y){return typeof y==="object"&&y!==null&&y!==undefined}
+
 
 var scmLs=function(s){
   var scmx=scmGetIndex(s);
