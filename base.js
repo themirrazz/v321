@@ -2,7 +2,12 @@
 var selfCmd="";
 var fakewin={
   toString:function(){},
-  util:{wait:function(ms){return new Promise(function(y,n){setTimeout(function(){y()},ms);})},
+    util:{wait:function(ms){return new Promise(function(y,n){setTimeout(function(){y()},ms);})},
+         rand:function(a,b){
+           var c=b-a;
+           var d=Math.floor(Math.random()*c)
+           return d-a;
+         }},
   FSUtil:{},
   fstype:{},
   sysConf:{},
@@ -29,7 +34,20 @@ var fakewin={
     },
     Theme:{
       getIconUrl:async function getIconUrl(icon){
-        return w96.desktop_shell.getIconUrl(icon);
+        var ico=icon;
+        if(ico==="mime/bin-data"){
+          ico='binary';
+        }
+        if(ico==="mime/css"){
+          ico='css';
+        }
+        if(ico==="actions/delete"){
+          ico='dynamite';
+        }
+        if(ico==="apps/discord"){
+          ico='discord';
+        }
+        return w96.desktop_shell.getIconUrl(ico);
       }
     },
     DialogCreator:{alert:V3Alert}
@@ -38,7 +56,7 @@ var fakewin={
     constructor(a,b,c,d,e){
       super(a,b,c,d,e)
       this.title="Untitled Window";
-      this.body="this is where ur crao goes"
+      this.body="this is where ur crap goes"
     }
   },
   shell: {
@@ -97,9 +115,7 @@ f$.call({
         w96.desktop_shell.exec("win96://"+cmd);
       }
     }
-  }
-       }
-  
+  }  
 }
   fakewin.ui.MenuBar=V3MenuBar;
   
@@ -282,6 +298,7 @@ function V3ContextMenu(items) {
       null
     );
     var bta=mbx.dlg.window.querySelector('.mbox-buttonsgroup');
+    bta.classList.add("buttons");
     bta.innerHTML="";
     var ob={close:function(){mbx.dlg.close()},get wnd(){return w96.util.Swgen(mbx.dlg)},params:args,}
     for(var i=0;i<args.buttons.length;i++){
@@ -446,6 +463,7 @@ fakewin.FS={
     if(fs[dev].dirExists(path.slice(2))){
        return true;
     };
+    return false;
   },
   mkdir:async function(path){
     var volumeletter=path[0];
@@ -629,6 +647,42 @@ fakewin.util.Swgen=function(rsw){
   };
   return sw;
 };
+  
+var UiToolbar=function () {
+  var gX=this.selfElem=document.createElement("div");
+  gX.className="w96-toolbar";
+};
+  
+UiToolbar.prototype.addItem=function(o){
+  var name=o.name;var text=o.text;var imageUrl=o.imageUrl;var onclick=o.onclick;
+  var gX=this.selfElem;
+  var nZ=document.createElement("div");
+  nZ.style.display='inline-flex';
+  nZ.style.flexDirection="row";
+  var iO=document.createElement('img');
+  iO.src=imageUrl;
+  iO.style.height='24px';
+  iO.style.width='24px';
+  nZ.appendChild(iO);
+  var yP=document.createElement('span');
+  yP.innerText=text;
+  nZ.appendChild(yP);
+  nZ.setAttribute("fgbruh",name||'A');
+  nZ.onclick=function(){V3Alert('why')}
+  gX.appendChild(nZ);
+}
+  UiToolbar.prototype.addSeparator=function(){
+    var sep=document.createElement('div');
+    sep.style.display='inline-block';
+    sep.style.border='1px solid black';
+    sep.innerText="seperatirrr";
+    this.selfElem.appendChild(sep);
+}
+  
+  UiToolbar.prototype.getElement=function(){return this.selfElem}
+  
+  if(!fakewin.ui.components){fakewin.ui.components={}}
+  fakewin.ui.components.ToolBar=UiToolbar;
   
 
 var indexes={};
