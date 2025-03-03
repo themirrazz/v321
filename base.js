@@ -76,13 +76,16 @@ var fakewin={
     execCmd: async function (cmd,args){
       args=args||[]
       if(selfCmd&&cmd==selfCmd){
-    var f$=eval(`(async function(w96,WApplication,StandardWindow,FS,alert){
+    var f$=eval(`(async function(w96,WApplication,StandardWindow,FS,alert,window){
 ${await fakewin.FS.readstr(fp)}
 })`);
 f$.call({
   boxedEnv:{args:[cmd,...args]}
 },fakewin,fakewin.WApplication,fakewin.StandardWindow,fakewin.FS,V3Alert).then(console.info).catch(function(e){
   alert(e.name+":"+e.message);
+},{
+get navigator() {return window.navigator},
+w96: fakewin
 });
       } else if(cmd==="md") {
         w96.apps_builtin.markdownViewer.start(
@@ -425,7 +428,7 @@ fakewin.FS={
     fs['v3Port-Mounted-FS-'+fsid]=drive.selfFs;
   },
   readbin:async function (path){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -471,7 +474,7 @@ fakewin.FS={
   },
   readdir:async function(path){
     var res=[];
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -489,7 +492,7 @@ fakewin.FS={
     return res
   },
   exists:async function (path){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -505,7 +508,7 @@ fakewin.FS={
     return false;
   },
   mkdir:async function(path){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -525,7 +528,7 @@ fakewin.FS={
     this.writebin(path,arr);
   },
   writebin: async function(path,data){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -539,7 +542,7 @@ fakewin.FS={
     fs[dev].writeBinaryFile(path.slice(2),new Uint8Array(data.buffer||data));
   },
   touch: async function(path){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -552,7 +555,7 @@ fakewin.FS={
     fs[dev].createEmptyFile(path);
   },
   cpfile:async function(path,dest){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -568,7 +571,7 @@ fakewin.FS={
     )
   },
   cpdir:async function(path,dest){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -584,7 +587,7 @@ fakewin.FS={
     )
   },
   mvdir:async function(path,dest){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -600,7 +603,7 @@ fakewin.FS={
     )
   },
   mvfile:async function(path,dest){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -616,7 +619,7 @@ fakewin.FS={
     )
   },
   rm:async function(path,dest){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -632,7 +635,7 @@ fakewin.FS={
     )
   },
   rmdir:async function(path,dest){
-    var volumeletter=path[0];
+    var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
     var volumes={'a':'floppy_a','c':'main'};
     var dev=fs.resolveByPrefix(volumeletter.toLowerCase()+":");
@@ -900,19 +903,20 @@ try{
     $$ARGSSTR$$=selfCmd+" "+$$ARGSSTR$$;
     var $$ARGS$$=$$ARGSSTR$$.split(" ");
     var f$=eval(`(async function(w96,WApplication,StandardWindow,FS,alert){
+let window = {w96:w96, navigator: globalThis.navigator, window: globalThis.window, localStorage: globalThis.localStorage, indexedDb: globalThis.indexedDb, document: globalThis.document, Document: globalThis.document, get fetch() { return globalThis.fetch }, set fetch(an) {return globalThis.fetch = an }, XMLHttpRequest: XMLHttpRequest, Object: Object};
 ${await fakewin.FS.readstr(fp)}
 })`);
 f$.call({
   boxedEnv:{args:$$ARGS$$}
 },fakewin,fakewin.WApplication,fakewin.StandardWindow,fakewin.FS,V3Alert).then(console.info).catch(function(e){
   alert(e.name+":"+e.message);
-});
+},{get navigator(){return window.navigator},w96:fakewin});
   }else{
 
 var f$=eval(`(async function(w96,alert,WApplication,StandardWindow,FS){
 ${await fakewin.FS.readstr(fp)}
 })`);
-f$(fakewin,V3Alert).then(console.info).catch(function(e){
+f$(fakewin,V3Alert,undefined,undefined,undefined,{get navigator(){return window.navigator},w96:fakewin}).then(console.info).catch(function(e){
   alert(e.name+":"+e.message);
 });
   
