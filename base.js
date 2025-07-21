@@ -1,5 +1,23 @@
 (async function(fp,op){
 var selfCmd="";
+var V3NotifyIcon = class V3NotifyIcon {
+  ni;
+  onclick;
+  ondblclick;
+  notifyEl;
+  constructor({ tooltip, iconUrl, onclick, ondblclick }) {
+    this.onclick = onclick;
+    this.ondblclick = ondblclick;
+    this.iconUrl = iconUrl;
+    const ni = this.ni = new NotifyIcon('v321_ni_' + Date.now(), iconUrl);
+    this.notifyEl = ni.notifyElement;
+    ni.onclick = (...args) => this.onclick(...args);
+    ni.ondblclick = (...args) => this.ondblclick(...args);
+  }
+  setIcon(url) {
+    this.ni.setIcon(url);
+  }
+};
 var fakewin={
   toString:function(){},
     util:{wait:function(ms){return new Promise(function(y,n){setTimeout(function(){y()},ms);})},
@@ -11,6 +29,7 @@ var fakewin={
   FSUtil:{},
   fstype:{},
   sysConf:{},
+  state: { processes: [] },
   ui:{
     MsgBoxSimple: {
       error:function(){
@@ -66,6 +85,16 @@ var fakewin={
         icon,
         cmd
        )
+    },
+    NotifyIcon: V3NotifyIcon,
+    Taskbar: {
+      /**
+       * 
+       * @param {V3NotifyIcon} trayIcon
+       */
+      registerNotifyIcon: trayIcon => {
+        w96.desktop_shell.registerNotifyIcon(trayIcon.ni);
+      }
     }
   },
   sys:{
@@ -149,6 +178,11 @@ var SomeV3App=class {
     var sw=new fakewin.StandardWindow(params);
     this.windows.push(sw);
     return sw
+  }
+  terminate() {
+    this.windows.forEach(w => {
+      try { w.close() } catch (e) { console.warn(e) }
+    });
   }
 }
 
@@ -427,6 +461,10 @@ fakewin.FS={
     }
     fs['v3Port-Mounted-FS-'+fsid]=drive.selfFs;
   },
+  toURL: async function (path) {
+    const blob = await this.toBlob(path);
+    const url = URL.createObjectURL(blob);
+  },
   readbin:async function (path){
     var volumeletter=path[0].toLowerCase();
     var AllowedVolumes=['a', 'c'];
@@ -650,6 +688,7 @@ fakewin.FS={
       dest.slice(2),
     )
   },
+  // c:/local/discord/app/discord.js
   umount:function(prefix){
     setTimeout(function(){
     var dev=fs.resolveByPrefix(prefix.toLowerCase());
@@ -892,6 +931,17 @@ fakewin.sysConf={
   loadAll:scmLoad
 }
 
+var fake_gthis = {get navigator(){return window.navigator},w96:fakewin};
+var gt_proxy = new Proxy(window, {
+  get(k, p) {
+    return fake_gthis[p] || window[p]
+  },
+  set(k, p, v) {
+    fake_gthis[p] = v
+  }
+});
+
+
 try{
   await scmLoad();
 }catch(e){null}
@@ -903,12 +953,12 @@ try{
     $$ARGSSTR$$=selfCmd+" "+$$ARGSSTR$$;
     var $$ARGS$$=$$ARGSSTR$$.split(" ");
     var f$=eval(`(async function(w96,WApplication,StandardWindow,FS,alert){
-let window = {w96:w96, navigator: globalThis.navigator, window: globalThis.window, localStorage: globalThis.localStorage, indexedDb: globalThis.indexedDb, document: globalThis.document, Document: globalThis.document, get fetch() { return globalThis.fetch }, set fetch(an) {return globalThis.fetch = an }, XMLHttpRequest: XMLHttpRequest, Object: Object};
+/*let window = {w96:w96, navigator: globalThis.navigator, window: globalThis.window, localStorage: globalThis.localStorage, indexedDb: globalThis.indexedDb, document: globalThis.document, Document: globalThis.document, get fetch() { return globalThis.fetch }, set fetch(an) {return globalThis.fetch = an }, XMLHttpRequest: XMLHttpRequest, Object: Object}*/;
 ${await fakewin.FS.readstr(fp)}
 })`);
 f$.call({
   boxedEnv:{args:$$ARGS$$}
-},fakewin,fakewin.WApplication,fakewin.StandardWindow,fakewin.FS,V3Alert).then(console.info).catch(function(e){
+},fakewin,fakewin.WApplication,fakewin.StandardWindow,fakewin.FS,V3Alert,gt_proxy).then(console.info).catch(function(e){
   alert(e.name+":"+e.message);
 },{get navigator(){return window.navigator},w96:fakewin});
   }else{
@@ -916,9 +966,10 @@ f$.call({
 var f$=eval(`(async function(w96,alert,WApplication,StandardWindow,FS){
 ${await fakewin.FS.readstr(fp)}
 })`);
-f$(fakewin,V3Alert,undefined,undefined,undefined,{get navigator(){return window.navigator},w96:fakewin}).then(console.info).catch(function(e){
+f$(fakewin,V3Alert,undefined,undefined,undefined,gt_proxy).then(console.info).catch(function(e){
   alert(e.name+":"+e.message);
 });
+//c:/local/discord/app/discord.js
   
   }
 
